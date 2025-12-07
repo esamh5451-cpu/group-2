@@ -33,8 +33,8 @@ export async function registerRoutes(
         return res.status(401).json({ message: result.message || "Invalid credentials" });
       }
 
-      const sessionId = await createSession(username);
-      res.json({ sessionId, username });
+      const token = await createSession(username);
+      res.json({ token, username });
     } catch (error: any) {
       console.error("Login error:", error);
       res.status(500).json({ message: error.message });
@@ -42,22 +42,18 @@ export async function registerRoutes(
   });
 
   app.post("/api/auth/logout", async (req, res) => {
-    const sessionId = req.headers.authorization?.replace("Bearer ", "");
-    if (sessionId) {
-      await deleteSession(sessionId);
-    }
     res.json({ message: "Logged out successfully" });
   });
 
   app.get("/api/auth/me", async (req, res) => {
-    const sessionId = req.headers.authorization?.replace("Bearer ", "");
-    if (!sessionId) {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    const username = await validateSession(sessionId);
+    const username = await validateSession(token);
     if (!username) {
-      return res.status(401).json({ message: "Invalid session" });
+      return res.status(401).json({ message: "Invalid token" });
     }
 
     res.json({ username });
