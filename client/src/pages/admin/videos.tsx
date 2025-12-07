@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Video as VideoIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/image-upload";
 import { VideoUpload } from "@/components/video-upload";
 import { AdminLayout } from "./index";
+import { queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/api";
 import type { Video } from "@shared/schema";
 
 export default function AdminVideos() {
@@ -34,6 +36,26 @@ export default function AdminVideos() {
     queryKey: ["/api/videos"],
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/videos/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
+      toast({
+        title: "Video deleted",
+        description: "The video has been removed.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete video",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEdit = (video: Video) => {
     setEditingVideo(video);
     setFormData({
@@ -51,10 +73,7 @@ export default function AdminVideos() {
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this video?")) {
-      toast({
-        title: "Video deleted",
-        description: "The video has been removed.",
-      });
+      deleteMutation.mutate(id);
     }
   };
 

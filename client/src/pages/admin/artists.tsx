@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/image-upload";
 import { AdminLayout } from "./index";
+import { queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/api";
 import type { Artist } from "@shared/schema";
 
 export default function AdminArtists() {
@@ -31,6 +33,26 @@ export default function AdminArtists() {
     queryKey: ["/api/artists"],
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/artists/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/artists"] });
+      toast({
+        title: "Artist deleted",
+        description: "The artist has been removed.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete artist",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEdit = (artist: Artist) => {
     setEditingArtist(artist);
     setFormData({
@@ -47,10 +69,7 @@ export default function AdminArtists() {
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this artist?")) {
-      toast({
-        title: "Artist deleted",
-        description: "The artist has been removed.",
-      });
+      deleteMutation.mutate(id);
     }
   };
 

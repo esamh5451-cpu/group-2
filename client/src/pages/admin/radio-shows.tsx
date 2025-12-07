@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Radio } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/image-upload";
 import { AudioUpload } from "@/components/audio-upload";
 import { AdminLayout } from "./index";
+import { queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/api";
 import type { RadioShow } from "@shared/schema";
 
 const daysOfWeek = [
@@ -46,6 +48,26 @@ export default function AdminRadioShows() {
     queryKey: ["/api/radio/shows"],
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/radio/shows/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/radio/shows"] });
+      toast({
+        title: "Show deleted",
+        description: "The radio show has been removed.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete show",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEdit = (show: RadioShow) => {
     setEditingShow(show);
     setFormData({
@@ -65,10 +87,7 @@ export default function AdminRadioShows() {
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this show?")) {
-      toast({
-        title: "Show deleted",
-        description: "The radio show has been removed.",
-      });
+      deleteMutation.mutate(id);
     }
   };
 
